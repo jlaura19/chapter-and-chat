@@ -1,5 +1,5 @@
 const API_ORIGIN = import.meta.env.VITE_API_ORIGIN
-  || `${window.location.protocol}//${window.location.hostname}:8080`
+  || `${window.location.protocol}//${window.location.hostname}:8000`
 
 export function resolveMediaUrl(url) {
   if (!url) {

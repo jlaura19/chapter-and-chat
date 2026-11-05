@@ -1,16 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* Dark Academia / Vintage Library palette. Tailwind tokens live in tailwind.config.js. */
 :root {
-  --surface: #f3f6f9;
-  --surface-alt: #ffffff;
-  --ink: #152238;
-  --muted: #5f6a7f;
-  --primary: #0f766e;
-  --primary-strong: #0b5f58;
-  --danger: #b91c1c;
-  --line: #dce5ea;
-  --accent-soft: #c2f4ef;
-  --shadow-soft: 0 16px 40px rgba(21, 34, 56, 0.08);
+  --surface: #fdfbf7;
+  --surface-alt: #fffdf8;
+  --ink: #2c2421;
+  --muted: #6b5d55;
+  --primary: #7a2e22;
+  --primary-strong: #5c2219;
+  --danger: #9b1c1c;
+  --line: #e4d8c3;
+  --accent-soft: #f3e7d3;
+  --gold: #c5a880;
+  --shadow-soft: 0 16px 40px rgba(44, 36, 33, 0.1);
 }
 
 * {
@@ -20,11 +24,12 @@
 body {
   margin: 0;
   color: var(--ink);
-  font-family: 'Sora', 'Segoe UI', sans-serif;
+  font-family: 'EB Garamond', Garamond, Georgia, serif;
+  font-size: 1.08rem;
   background:
-    radial-gradient(circle at 12% 4%, #dff8f2 0%, transparent 30%),
-    radial-gradient(circle at 88% 12%, #e1f0ff 0%, transparent 28%),
-    linear-gradient(180deg, #f7fafc 0%, #eef3f7 100%);
+    radial-gradient(circle at 12% 4%, #f6ecd9 0%, transparent 30%),
+    radial-gradient(circle at 88% 12%, #efe3cc 0%, transparent 28%),
+    linear-gradient(180deg, #fdfbf7 0%, #f5efe4 100%);
   min-height: 100vh;
 }
 
@@ -54,8 +59,9 @@ a {
 
 .app-header-title h1 {
   margin: 0;
-  font-size: 2rem;
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  font-size: 2.4rem;
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: 0.01em;
 }
 
 .app-header-title p {
@@ -111,15 +117,16 @@ a {
 .brand-bar {
   margin: 0;
   text-align: center;
-  color: #f2fdfc;
+  color: #fdfbf7;
   padding: 38px 28px 30px;
-  background: linear-gradient(135deg, #0f766e 0%, #2c8d84 48%, #3f9c90 100%);
+  background: linear-gradient(135deg, #2c2421 0%, #5c2219 55%, #7a2e22 100%);
+  border-bottom: 2px solid var(--gold);
 }
 
 .brand-bar h1 {
   margin: 0 0 8px;
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
-  font-size: 1.7rem;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.9rem;
 }
 
 .brand-bar p {
@@ -289,7 +296,7 @@ button:disabled {
 .summary-card h2 {
   margin: 0 0 6px;
   font-size: 2rem;
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
 .summary-card p {
@@ -312,7 +319,7 @@ button:disabled {
 .section-heading h2,
 .section-stack h3 {
   margin: 0;
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
 .cta-row {
@@ -444,6 +451,7 @@ button:disabled {
 
 .book-highlight h2 {
   margin: 0;
+  font-family: 'Playfair Display', Georgia, serif;
   font-size: 1.22rem;
 }
 

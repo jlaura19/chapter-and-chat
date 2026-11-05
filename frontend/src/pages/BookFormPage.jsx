@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../services/api'
+import { errorMessage } from '../services/errors'
 import { resolveMediaUrl } from '../services/media'
 import AppHeader from '../components/AppHeader'
+import { Button, Card, Container, Field, Notice, Page, inputClass } from '../components/ui'
 
 const statusOptions = ['To Read', 'Reading', 'Completed']
 
@@ -74,10 +76,6 @@ export default function BookFormPage() {
     }
 
     formData.append('book', new Blob([JSON.stringify(bookPayload)], { type: 'application/json' }))
-    const activeUsername = localStorage.getItem('USIU_BOOKCLUB_USERNAME') || localStorage.getItem('USIU_BOOKCLUB_STUDENT_ID')
-    if (activeUsername) {
-      formData.append('username', activeUsername)
-    }
     if (coverImageFile) {
       formData.append('coverImage', coverImageFile)
     }
@@ -90,105 +88,128 @@ export default function BookFormPage() {
       }
       navigate('/catalog')
     } catch (err) {
-      const status = err?.response?.status
-      if (status === 401) {
-        localStorage.removeItem('USIU_BOOKCLUB_USERNAME')
-        localStorage.removeItem('USIU_BOOKCLUB_STUDENT_ID')
-        navigate('/', { replace: true })
-        return
-      }
-
-      const apiMessage = err?.response?.data?.message
-      setError(apiMessage || 'Failed to save the book. Please try again.')
+      setError(errorMessage(err, 'Failed to save the book. Please try again.'))
     }
   }
 
+  const previewSrc = coverPreview || (existingCover ? resolveMediaUrl(existingCover) : '')
+
   return (
-    <main className="page-shell">
+    <Page>
       <AppHeader
         title={titleText}
         subtitle="Create a shared book entry and track your reading status."
         primaryAction={{ to: '/community', label: 'Open Community' }}
       />
 
-      <section className="card form-card">
-        <form className="form-grid" onSubmit={handleSubmit}>
-          <label htmlFor="title">Title</label>
-          <input
-            id="title"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            required
-          />
+      <Container>
+        <Card>
+          <form className="grid gap-5 md:grid-cols-2" onSubmit={handleSubmit}>
+            <Field id="title" label="Title">
+              <input
+                id="title"
+                className={inputClass}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                required
+              />
+            </Field>
 
-          <label htmlFor="author">Author</label>
-          <input
-            id="author"
-            value={author}
-            onChange={(event) => setAuthor(event.target.value)}
-            required
-          />
+            <Field id="author" label="Author">
+              <input
+                id="author"
+                className={inputClass}
+                value={author}
+                onChange={(event) => setAuthor(event.target.value)}
+                required
+              />
+            </Field>
 
-          <label htmlFor="genre">Genre</label>
-          <input id="genre" value={genre} onChange={(event) => setGenre(event.target.value)} />
+            <Field id="genre" label="Genre">
+              <input
+                id="genre"
+                className={inputClass}
+                value={genre}
+                onChange={(event) => setGenre(event.target.value)}
+              />
+            </Field>
 
-          <label htmlFor="readingStatus">Reading status</label>
-          <select
-            id="readingStatus"
-            value={readingStatus}
-            onChange={(event) => setReadingStatus(event.target.value)}
-          >
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            <Field id="readingStatus" label="Reading status">
+              <select
+                id="readingStatus"
+                className={inputClass}
+                value={readingStatus}
+                onChange={(event) => setReadingStatus(event.target.value)}
+              >
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </Field>
 
-          <label htmlFor="rating">Rating</label>
-          <input
-            id="rating"
-            type="number"
-            min="0"
-            max="5"
-            value={rating}
-            onChange={(event) => setRating(Number(event.target.value))}
-          />
+            <Field id="rating" label="Rating (0-5)">
+              <input
+                id="rating"
+                type="number"
+                min="0"
+                max="5"
+                className={inputClass}
+                value={rating}
+                onChange={(event) => setRating(Number(event.target.value))}
+              />
+            </Field>
 
-          <label htmlFor="reviewNotes">Review notes</label>
-          <textarea
-            id="reviewNotes"
-            value={reviewNotes}
-            onChange={(event) => setReviewNotes(event.target.value)}
-            rows="4"
-          />
+            <Field id="coverImage" label="Cover image">
+              <input
+                id="coverImage"
+                type="file"
+                accept="image/*"
+                className="text-sm text-sepia file:mr-3 file:rounded-sm file:border file:border-gold file:bg-parchment file:px-3 file:py-2 file:font-display file:text-sepia hover:file:border-burgundy"
+                onChange={(event) => setCoverImageFile(event.target.files?.[0] || null)}
+              />
+            </Field>
 
-          <label htmlFor="coverImage">Cover image</label>
-          <input
-            id="coverImage"
-            type="file"
-            accept="image/*"
-            onChange={(event) => setCoverImageFile(event.target.files?.[0] || null)}
-          />
-
-          {(coverPreview || existingCover) && (
-            <div className="image-preview">
-              <img alt="Cover preview" src={coverPreview || resolveMediaUrl(existingCover)} />
+            <div className="md:col-span-2">
+              <Field id="reviewNotes" label="Review notes">
+                <textarea
+                  id="reviewNotes"
+                  rows="4"
+                  className={inputClass}
+                  value={reviewNotes}
+                  onChange={(event) => setReviewNotes(event.target.value)}
+                />
+              </Field>
             </div>
-          )}
 
-          {error && <p className="form-error">{error}</p>}
+            {previewSrc && (
+              <div className="md:col-span-2">
+                <img
+                  alt="Cover preview"
+                  src={previewSrc}
+                  className="max-h-72 rounded-sm border border-gold object-contain shadow-card"
+                />
+              </div>
+            )}
 
-          <div className="form-actions">
-            <button type="submit" className="primary-button">
-              {isEditing ? 'Update book' : 'Add book'}
-            </button>
-            <button type="button" className="secondary-button" onClick={() => navigate('/catalog')}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      </section>
-    </main>
+            {error && (
+              <div className="md:col-span-2">
+                <Notice tone="error">{error}</Notice>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3 md:col-span-2">
+              <Button type="submit" variant="primary">
+                {isEditing ? 'Update book' : 'Add book'}
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/catalog')}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </Container>
+    </Page>
   )
 }

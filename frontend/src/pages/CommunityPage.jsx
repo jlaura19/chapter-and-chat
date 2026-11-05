@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import { errorMessage } from '../services/errors'
 import AppHeader from '../components/AppHeader'
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Container,
+  Field,
+  Notice,
+  Page,
+  SectionTitle,
+  inputClass,
+} from '../components/ui'
 
 const statusOptions = ['To Read', 'Reading', 'Completed']
 
@@ -87,8 +100,7 @@ export default function CommunityPage() {
       setRating(5)
       setReadingStatus('Completed')
     } catch (err) {
-      const message = err?.response?.data?.message || 'Could not publish review. Try again.'
-      setError(message)
+      setError(errorMessage(err, 'Could not publish review. Try again.'))
     } finally {
       setIsSubmitting(false)
     }
@@ -111,107 +123,130 @@ export default function CommunityPage() {
   }
 
   return (
-    <main className="page-shell">
+    <Page>
       <AppHeader
         title="Community Reviews"
         subtitle="Pick any shared book and post your review for everyone to read."
         primaryAction={{ to: '/books/new', label: 'Share A New Book' }}
       />
 
-      <section className="card section-stack">
-        <div className="field-group">
-          <label htmlFor="communityBook">Choose book</label>
-          <select id="communityBook" value={selectedBookId} onChange={handleBookChange}>
-            {books.length === 0 ? (
-              <option value="">No books available yet</option>
-            ) : (
-              books.map((book) => (
-                <option key={book.id} value={book.id}>
-                  {book.title} by {book.author}
-                </option>
-              ))
+      <Container>
+        <Card className="space-y-6">
+          <Field id="communityBook" label="Choose book">
+            <select id="communityBook" className={inputClass} value={selectedBookId} onChange={handleBookChange}>
+              {books.length === 0 ? (
+                <option value="">No books available yet</option>
+              ) : (
+                books.map((book) => (
+                  <option key={book.id} value={book.id}>
+                    {book.title} by {book.author}
+                  </option>
+                ))
+              )}
+            </select>
+          </Field>
+
+          {selectedBook ? (
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-sm border border-gold/60 bg-parchment p-5">
+              <div className="space-y-1">
+                <h2 className="font-display text-2xl text-sepia">{selectedBook.title}</h2>
+                <p className="italic text-sepia/70">
+                  {selectedBook.author} • {selectedBook.genre || 'Unclassified genre'}
+                </p>
+              </div>
+              <Link
+                to={`/books/${selectedBook.id}`}
+                className="rounded-sm border border-gold px-4 py-2 font-display hover:border-burgundy hover:text-burgundy"
+              >
+                View details
+              </Link>
+            </div>
+          ) : (
+            <p className="italic text-sepia/70">Add the first book to start community reviews.</p>
+          )}
+
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmitReview}>
+            <h3 className="font-display text-xl text-sepia md:col-span-2">Post your review</h3>
+
+            <Field id="communityRating" label="Rating (0-5)">
+              <input
+                id="communityRating"
+                type="number"
+                min="0"
+                max="5"
+                className={inputClass}
+                value={rating}
+                onChange={(event) => setRating(Number(event.target.value))}
+              />
+            </Field>
+
+            <Field id="communityStatus" label="Your status">
+              <select
+                id="communityStatus"
+                className={inputClass}
+                value={readingStatus}
+                onChange={(event) => setReadingStatus(event.target.value)}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <div className="md:col-span-2">
+              <Field id="communityComment" label="Review comment">
+                <textarea
+                  id="communityComment"
+                  rows="4"
+                  className={inputClass}
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                  placeholder="Share your thoughts about this book."
+                />
+              </Field>
+            </div>
+
+            {error && (
+              <div className="md:col-span-2">
+                <Notice tone="error">{error}</Notice>
+              </div>
             )}
-          </select>
-        </div>
 
-        {selectedBook ? (
-          <div className="book-highlight">
-            <h2>{selectedBook.title}</h2>
-            <p>{selectedBook.author} • {selectedBook.genre || 'Unclassified genre'}</p>
-            <Link to={`/books/${selectedBook.id}`} className="secondary-button">
-              View details
-            </Link>
-          </div>
-        ) : (
-          <p className="muted-text">Add the first book to start community reviews.</p>
-        )}
+            <div className="md:col-span-2">
+              <Button type="submit" variant="primary" disabled={isSubmitting || !selectedBookId}>
+                {isSubmitting ? 'Posting…' : 'Post Review'}
+              </Button>
+            </div>
+          </form>
+        </Card>
 
-        <form className="form-grid" onSubmit={handleSubmitReview}>
-          <h3>Post your review</h3>
-
-          <label htmlFor="communityRating">Rating (0-5)</label>
-          <input
-            id="communityRating"
-            type="number"
-            min="0"
-            max="5"
-            value={rating}
-            onChange={(event) => setRating(Number(event.target.value))}
-          />
-
-          <label htmlFor="communityStatus">Your status</label>
-          <select
-            id="communityStatus"
-            value={readingStatus}
-            onChange={(event) => setReadingStatus(event.target.value)}
-          >
-            {statusOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-
-          <label htmlFor="communityComment">Review comment</label>
-          <textarea
-            id="communityComment"
-            rows="4"
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder="Share your thoughts about this book."
-          />
-
-          {error && <p className="form-error">{error}</p>}
-
-          <button type="submit" className="primary-button" disabled={isSubmitting || !selectedBookId}>
-            {isSubmitting ? 'Posting...' : 'Post Review'}
-          </button>
-        </form>
-      </section>
-
-      <section className="card section-stack">
-        <h3>What readers are saying</h3>
-        {reviews.length === 0 ? (
-          <p className="muted-text">No reviews yet for this book. Start the conversation.</p>
-        ) : (
-          <div className="feed-list">
-            {reviews.map((review) => (
-              <article key={review.id} className="feed-item">
-                <div className="feed-meta">
-                  <strong>{review.reviewerUsername || review.reviewerStudentId}</strong>
-                  <span>{review.readingStatus}</span>
-                  <span>Rating: {review.rating}/5</span>
-                  <span>Upvotes: {review.upvotes ?? 0}</span>
-                </div>
-                <p>{review.comment}</p>
-                <button type="button" className="secondary-button" onClick={() => handleUpvoteReview(review.id)}>
-                  Upvote
-                </button>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
+        <Card>
+          <SectionTitle>What readers are saying</SectionTitle>
+          {reviews.length === 0 ? (
+            <p className="italic text-sepia/70">No reviews yet for this book. Start the conversation.</p>
+          ) : (
+            <ul className="space-y-5">
+              {reviews.map((review) => (
+                <li key={review.id} className="space-y-3 border-b border-gold/40 pb-5 last:border-b-0 last:pb-0">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Avatar user={{ username: review.reviewerUsername }} size="sm" />
+                    <strong className="font-display text-sepia">{review.reviewerUsername}</strong>
+                    <Badge>{review.readingStatus}</Badge>
+                    <span className="text-sm text-sepia/70">Rating: {review.rating}/5</span>
+                    <span className="text-sm text-sepia/70">Upvotes: {review.upvotes ?? 0}</span>
+                  </div>
+                  <p className="leading-relaxed text-sepia/90">{review.comment}</p>
+                  <Button variant="outline" onClick={() => handleUpvoteReview(review.id)}>
+                    Upvote
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </Container>
+    </Page>
   )
 }

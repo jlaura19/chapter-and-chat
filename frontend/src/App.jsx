@@ -5,34 +5,28 @@ import DashboardPage from './pages/DashboardPage'
 import CatalogPage from './pages/CatalogPage'
 import BookFormPage from './pages/BookFormPage'
 import CommunityPage from './pages/CommunityPage'
-import ChatPage from './pages/ChatPage'
+import ClubsPage from './pages/ClubsPage'
+import ClubDetailPage from './pages/ClubDetailPage'
+import ProfilePage from './pages/ProfilePage'
 import api from './services/api'
+import { clearToken, getToken } from './services/session'
 
 export default function App() {
-  const storageKey = 'USIU_BOOKCLUB_USERNAME'
-  const legacyStorageKey = 'USIU_BOOKCLUB_STUDENT_ID'
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
 
   useEffect(() => {
     const verifySession = async () => {
+      if (!getToken()) {
+        setIsCheckingSession(false)
+        return
+      }
+
       try {
-        const response = await api.get('/auth/me')
-        if (response.status === 200) {
-          const sessionUsername = response.data.username || response.data.studentId
-          if (sessionUsername) {
-            localStorage.setItem(storageKey, sessionUsername)
-          }
-          localStorage.removeItem(legacyStorageKey)
-          setIsAuthenticated(true)
-        } else {
-          localStorage.removeItem(storageKey)
-          localStorage.removeItem(legacyStorageKey)
-          setIsAuthenticated(false)
-        }
+        await api.get('/auth/me')
+        setIsAuthenticated(true)
       } catch {
-        localStorage.removeItem(storageKey)
-        localStorage.removeItem(legacyStorageKey)
+        clearToken()
         setIsAuthenticated(false)
       } finally {
         setIsCheckingSession(false)
@@ -53,8 +47,8 @@ export default function App() {
 
   if (isCheckingSession) {
     return (
-      <main className="page-shell">
-        <p>Checking session...</p>
+      <main className="flex min-h-screen items-center justify-center bg-parchment font-body text-sepia">
+        <p className="italic text-sepia/70">Checking session…</p>
       </main>
     )
   }
@@ -86,8 +80,16 @@ export default function App() {
         element={isAuthenticated ? <CommunityPage /> : <Navigate to="/" replace />}
       />
       <Route
-        path="/chat"
-        element={isAuthenticated ? <ChatPage /> : <Navigate to="/" replace />}
+        path="/clubs"
+        element={isAuthenticated ? <ClubsPage /> : <Navigate to="/" replace />}
+      />
+      <Route
+        path="/clubs/:id"
+        element={isAuthenticated ? <ClubDetailPage /> : <Navigate to="/" replace />}
+      />
+      <Route
+        path="/profile"
+        element={isAuthenticated ? <ProfilePage /> : <Navigate to="/" replace />}
       />
       <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/'} replace />} />
     </Routes>

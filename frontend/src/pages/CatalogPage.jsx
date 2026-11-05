@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import BookCard from '../components/BookCard'
 import AppHeader from '../components/AppHeader'
+import { Container, Page, inputClass } from '../components/ui'
+import { getCurrentUsername } from '../services/session'
 
 const statusOptions = ['All', 'To Read', 'Reading', 'Completed']
 
@@ -11,7 +13,7 @@ export default function CatalogPage() {
   const [filter, setFilter] = useState('All')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
-  const currentUsername = localStorage.getItem('USIU_BOOKCLUB_USERNAME') || localStorage.getItem('USIU_BOOKCLUB_STUDENT_ID')
+  const currentUsername = getCurrentUsername()
 
   useEffect(() => {
     api.get('/books')
@@ -40,20 +42,22 @@ export default function CatalogPage() {
   }, [books, filter, query])
 
   return (
-    <main className="page-shell">
+    <Page>
       <AppHeader
         title="Catalog"
         subtitle="Browse all shared books, then jump into reviews and discussion."
         primaryAction={{ to: '/books/new', label: 'Add New Book' }}
       />
 
-      <section className="filter-bar">
+      <Container>
+      <section className="grid gap-4 md:grid-cols-[1fr_220px]">
         <input
+          className={inputClass}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by title, author, or genre"
         />
-        <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+        <select className={inputClass} value={filter} onChange={(event) => setFilter(event.target.value)}>
           {statusOptions.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -63,26 +67,27 @@ export default function CatalogPage() {
       </section>
 
       {loading ? (
-        <p>Loading your book collection…</p>
+        <p className="italic text-sepia/70">Loading your book collection…</p>
       ) : filteredBooks.length === 0 ? (
-        <div className="empty-state">
-          <p>No books found. Try adjusting your search or adding a new book.</p>
-          <Link to="/books/new" className="secondary-button">
+        <div className="space-y-3 rounded-md border border-dashed border-gold p-8 text-center">
+          <p className="italic text-sepia/70">No books found. Try adjusting your search or adding a new book.</p>
+          <Link to="/books/new" className="inline-block rounded-sm border border-gold px-4 py-2 font-display hover:border-burgundy hover:text-burgundy">
             Add a book
           </Link>
         </div>
       ) : (
-        <div className="book-grid">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredBooks.map((book) => (
             <BookCard
               key={book.id}
               book={book}
-              canManage={(book.ownerUsername || book.ownerStudentId) === currentUsername}
+              canManage={book.ownerUsername === currentUsername}
               onDelete={handleDeleteBook}
             />
           ))}
         </div>
       )}
-    </main>
+      </Container>
+    </Page>
   )
 }

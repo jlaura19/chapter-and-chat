@@ -1,58 +1,61 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { NavLink, Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { clearToken, getCurrentUsername } from '../services/session'
+import { Avatar } from './ui'
+import NotificationBell from './NotificationBell'
 
 export default function AppHeader({ title, subtitle, primaryAction }) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const navigate = useNavigate()
+  const [me, setMe] = useState(null)
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    try {
-      await api.post('/auth/logout')
-    } catch {
-      // Ignore logout API failures and clear local state anyway.
-    } finally {
-      localStorage.removeItem('USIU_BOOKCLUB_USERNAME')
-      localStorage.removeItem('USIU_BOOKCLUB_STUDENT_ID')
-      window.dispatchEvent(new Event('bookclub:logout'))
-      navigate('/', { replace: true })
-      setIsLoggingOut(false)
-    }
+  useEffect(() => {
+    api.get('/profile')
+      .then((response) => setMe(response.data))
+      .catch(() => {})
+  }, [])
+
+  const handleLogout = () => {
+    clearToken()
+    window.dispatchEvent(new Event('bookclub:logout'))
+    navigate('/', { replace: true })
   }
 
+  const navClass = ({ isActive }) =>
+    `border-b-2 pb-0.5 font-display transition ${isActive ? 'border-burgundy text-burgundy' : 'border-transparent text-sepia/70 hover:text-sepia'}`
+
   return (
-    <header className="app-header">
-      <div className="app-header-title">
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </div>
+    <header className="border-b border-gold bg-parchment px-6 py-5 font-body text-sepia">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl">{title}</h1>
+          <p className="italic text-sepia/70">{subtitle}</p>
+        </div>
 
-      <nav className="top-nav">
-        <NavLink to="/dashboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/catalog" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          Catalog
-        </NavLink>
-        <NavLink to="/community" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          Community
-        </NavLink>
-        <NavLink to="/chat" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          Chat
-        </NavLink>
-      </nav>
-
-      <div className="header-actions">
-        {primaryAction && (
-          <Link to={primaryAction.to} className="primary-button">
-            {primaryAction.label}
+        <div className="flex flex-wrap items-center gap-3">
+          {primaryAction && (
+            <Link to={primaryAction.to} className="rounded-sm bg-burgundy px-4 py-2 font-display text-parchment hover:bg-burgundy/90">
+              {primaryAction.label}
+            </Link>
+          )}
+          <NotificationBell />
+          <Link to="/profile" className="flex items-center gap-2 rounded-full border border-gold py-1 pl-1 pr-3 font-display text-sm hover:border-burgundy">
+            <Avatar user={me ?? { username: getCurrentUsername() }} size="sm" />
+            <span>{me?.displayName || getCurrentUsername() || 'Reader'}</span>
           </Link>
-        )}
-        <button type="button" className="secondary-button" onClick={handleLogout} disabled={isLoggingOut}>
-          {isLoggingOut ? 'Logging out...' : 'Logout'}
-        </button>
+          <button type="button" onClick={handleLogout} className="rounded-sm border border-gold px-4 py-2 font-display hover:border-burgundy hover:text-burgundy">
+            Logout
+          </button>
+        </div>
       </div>
+
+      <nav className="mt-4 flex flex-wrap gap-6" aria-label="Main">
+        <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
+        <NavLink to="/catalog" className={navClass}>Catalog</NavLink>
+        <NavLink to="/clubs" className={navClass}>Clubs</NavLink>
+        <NavLink to="/community" className={navClass}>Reviews</NavLink>
+        <NavLink to="/profile" className={navClass}>Profile</NavLink>
+      </nav>
     </header>
   )
 }
