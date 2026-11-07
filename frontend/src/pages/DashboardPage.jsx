@@ -44,7 +44,7 @@ export default function DashboardPage() {
         <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
           <section aria-labelledby="reader-suite-title" className="space-y-6">
             <header>
-              <p className="font-display text-xs uppercase tracking-[0.25em] text-burgundy"> · Personal</p>
+              <p className="font-display text-xs uppercase tracking-[0.25em] text-burgundy">Layer one · Personal</p>
               <h2 id="reader-suite-title" className="font-display text-3xl">Personal Reader Suite</h2>
               <p className="italic text-sepia/70">Only you can see your shelf, goals, and journal.</p>
             </header>
@@ -58,7 +58,7 @@ export default function DashboardPage() {
 
           <section aria-labelledby="club-hub-title" className="space-y-6">
             <header>
-              <p className="font-display text-xs uppercase tracking-[0.25em] text-burgundy"> Community</p>
+              <p className="font-display text-xs uppercase tracking-[0.25em] text-burgundy">Layer two · Community</p>
               <h2 id="club-hub-title" className="font-display text-3xl">Club &amp; Community Hub</h2>
               <p className="italic text-sepia/70">
                 Current read, discussions, meetups, and votes.{' '}

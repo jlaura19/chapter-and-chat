@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 60 * 24
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:4173"])
+    # Usernames that receive the global admin role at signup.
+    admin_usernames: list[str] = Field(default_factory=list)
     upload_dir: str = "uploads"
     max_cover_bytes: int = 5 * 1024 * 1024
     max_avatar_bytes: int = 2 * 1024 * 1024

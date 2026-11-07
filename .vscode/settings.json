@@ -1,4 +1,3 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive",
-    "python.terminal.useEnvFile": true
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

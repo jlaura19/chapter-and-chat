@@ -20,7 +20,7 @@ export function Container({ children, className = '' }) {
 
 export function Card({ children, className = '' }) {
   return (
-    <section className={`rounded-md border border-gold/70 bg-surface/70 p-6 shadow-card ${className}`}>
+    <section className={`rounded-md border border-gold/70 bg-white/70 p-6 shadow-card ${className}`}>
       {children}
     </section>
   )

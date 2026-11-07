@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { Avatar, Button, Card, Container, Field, Notice, Page, SectionTitle, inputClass } from '../components/ui'
 import api from '../services/api'
 import { errorMessage } from '../services/errors'
-import { applyTheme } from '../services/theme'
+import { clearToken, getCurrentUsername } from '../services/session'
 
 const THEMES = [
   { value: 'LIGHT', label: 'Parchment (light)' },
@@ -19,11 +20,14 @@ const TOGGLES = [
 ]
 
 export default function ProfilePage() {
+  const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [form, setForm] = useState(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [saving, setSaving] = useState(false)
+  const [confirmUsername, setConfirmUsername] = useState('')
+  const [deletePassword, setDeletePassword] = useState('')
 
   useEffect(() => {
     api.get('/profile')
@@ -88,6 +92,18 @@ export default function ProfilePage() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    setError('')
+    try {
+      await api.delete('/profile', { data: { confirm: confirmUsername, password: deletePassword } })
+      clearToken()
+      window.dispatchEvent(new Event('bookclub:logout'))
+      navigate('/', { replace: true })
+    } catch (err) {
+      setError(errorMessage(err, 'Could not delete your account.'))
+    }
+  }
+
   return (
     <Page>
       <AppHeader title="My Profile" subtitle="Your reader identity and preferences" />
@@ -102,12 +118,7 @@ export default function ProfilePage() {
             <Card className="flex flex-col items-center gap-4 text-center">
               <Avatar user={profile} size="lg" />
               <p className="font-display text-xl">{profile.displayName || profile.username}</p>
-              <p className="text-sm text-sepia/70">{profile.email || `@${profile.username}`}</p>
-              {profile.username.startsWith('guest_') && (
-                <p className="text-xs text-sepia/60">
-                  This guest profile belongs to this browser. Clearing site data will disconnect it from your books and clubs. Sign out and create an account to keep your library.
-                </p>
-              )}
+              <p className="text-sm text-sepia/70">@{profile.username}</p>
               <label className="cursor-pointer rounded-sm border border-gold px-4 py-2 font-display hover:border-burgundy">
                 Upload avatar
                 <input type="file" accept="image/*" className="sr-only" onChange={handleAvatar} />
@@ -143,14 +154,10 @@ export default function ProfilePage() {
                   </div>
                   <Field id="pTheme" label="Theme">
                     <select id="pTheme" className={inputClass} value={form.themePreference}
-                      onChange={(e) => {
-                        setForm({ ...form, themePreference: e.target.value })
-                        applyTheme(e.target.value)
-                      }}>
+                      onChange={(e) => setForm({ ...form, themePreference: e.target.value })}>
                       {THEMES.map((theme) => <option key={theme.value} value={theme.value}>{theme.label}</option>)}
                     </select>
                   </Field>
-                  <p className="text-sm text-sepia/70 md:col-span-2">Select a theme to preview it, then save your profile to keep it.</p>
                   <fieldset className="space-y-2">
                     <legend className="font-display text-sm uppercase tracking-wide text-sepia/80">Notifications</legend>
                     {TOGGLES.map((toggle) => (
@@ -167,6 +174,26 @@ export default function ProfilePage() {
                 </form>
               </Card>
 
+              <Card className="border-burgundy/50">
+                <SectionTitle>Delete account</SectionTitle>
+                <p className="mb-4 text-sm text-sepia/80">
+                  This permanently removes your account, books, reviews, journal, and club memberships. Clubs you own
+                  must be deleted or handed over first.
+                </p>
+                <Field id="confirmUser" label={`Type "${getCurrentUsername() || profile.username}" to confirm`}>
+                  <input id="confirmUser" className={inputClass} value={confirmUsername}
+                    onChange={(e) => setConfirmUsername(e.target.value)} />
+                </Field>
+                <Field id="deletePassword" label="Your password">
+                  <input id="deletePassword" type="password" autoComplete="current-password" className={inputClass}
+                    value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} />
+                </Field>
+                <Button variant="danger" className="mt-4"
+                  disabled={confirmUsername !== profile.username || !deletePassword}
+                  onClick={handleDeleteAccount}>
+                  Delete my account
+                </Button>
+              </Card>
             </div>
           </div>
         )}

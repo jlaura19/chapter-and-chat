@@ -3,7 +3,6 @@ import { clearToken, getToken } from './session'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 10000,
 })
 
 api.interceptors.request.use((config) => {
@@ -17,9 +16,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401 && !error.config?.url?.startsWith('/auth/')) {
+    if (error?.response?.status === 401) {
       clearToken()
-      window.dispatchEvent(new Event('chapter-chat:session-expired'))
+      window.dispatchEvent(new Event('bookclub:logout'))
     }
     return Promise.reject(error)
   },

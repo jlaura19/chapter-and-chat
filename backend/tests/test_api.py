@@ -17,9 +17,13 @@ def _unique(prefix: str) -> str:
     return f"{prefix}_{uuid.uuid4().hex[:8]}"
 
 
-def _guest(client: TestClient, guest_id: str | None = None) -> dict:
-    response = client.post("/api/auth/guest", json={"guestId": guest_id or str(uuid.uuid4())})
-    assert response.status_code == 200, response.text
+def _signup(client: TestClient, prefix: str = "reader") -> dict:
+    username = _unique(prefix)
+    response = client.post(
+        "/api/auth/signup",
+        json={"username": username, "password": "correct-horse", "displayName": username},
+    )
+    assert response.status_code == 201, response.text
     body = response.json()
     return {
         "headers": {"Authorization": f"Bearer {body['accessToken']}"},
@@ -52,19 +56,22 @@ def test_health(client):
     assert client.get("/api/health").json() == {"status": "ok"}
 
 
-def test_guest_session_is_stable_per_browser(client):
-    guest_id = str(uuid.uuid4())
-    actor = _guest(client, guest_id)
-    repeat = _guest(client, guest_id)
-    another_browser = _guest(client)
+def test_signup_login_and_me(client):
+    actor = _signup(client)
+    username = actor["user"]["username"]
 
-    assert actor["user"]["id"] == repeat["user"]["id"]
-    assert actor["user"]["id"] != another_browser["user"]["id"]
-    assert client.get("/api/auth/me", headers=actor["headers"]).json()["id"] == actor["user"]["id"]
+    assert client.get("/api/auth/me", headers=actor["headers"]).json()["username"] == username
+
+    wrong = client.post("/api/auth/login", json={"username": username, "password": "not-the-password"})
+    assert wrong.status_code == 401
+
+    right = client.post("/api/auth/login", json={"username": username, "password": "correct-horse"})
+    assert right.status_code == 200
+    assert right.json()["accessToken"]
 
 
 def test_invite_code_rotates_and_progress_is_readable(client):
-    owner = _guest(client)
+    owner = _signup(client, "owner")
     club = _create_club(client, owner, "private")
 
     rotated = client.post(f"/api/clubs/{club['id']}/invite-code", headers=owner["headers"])
@@ -84,30 +91,18 @@ def test_protected_routes_require_token(client):
     assert client.get("/api/clubs").status_code in (401, 403)
 
 
-def test_email_register_and_login(client):
-    payload = {"email": "Reader@Example.com", "password": "secret123", "displayName": "Reader One"}
-    registered = client.post("/api/auth/register", json=payload)
-    assert registered.status_code == 200
-    assert registered.json()["user"]["email"] == "reader@example.com"
-
-    assert client.post("/api/auth/register", json=payload).status_code == 409
-    assert client.post("/api/auth/register", json={**payload, "email": "x@y.io", "password": "short"}).status_code == 422
-
-    login = client.post("/api/auth/login", json={"email": "reader@example.com", "password": "secret123"})
-    assert login.status_code == 200
-    me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {login.json()['accessToken']}"})
-    assert me.json()["displayName"] == "Reader One"
-    assert client.post("/api/auth/login", json={"email": "reader@example.com", "password": "wrong-pass"}).status_code == 401
-
-
-def test_account_deletion_and_signup_are_not_offered(client):
-    assert client.post("/api/auth/signup", json={}).status_code == 404
-    assert client.request("DELETE", "/api/profile", json={}).status_code == 405
+def test_duplicate_username_is_rejected(client):
+    actor = _signup(client)
+    response = client.post(
+        "/api/auth/signup",
+        json={"username": actor["user"]["username"], "password": "correct-horse"},
+    )
+    assert response.status_code == 409
 
 
 def test_public_club_join_is_instant(client):
-    owner = _guest(client)
-    joiner = _guest(client)
+    owner = _signup(client, "owner")
+    joiner = _signup(client, "joiner")
     club = _create_club(client, owner, "public")
 
     response = client.post(f"/api/clubs/{club['id']}/join", json={}, headers=joiner["headers"])
@@ -116,9 +111,9 @@ def test_public_club_join_is_instant(client):
 
 
 def test_private_club_is_listed_but_invite_code_stays_admin_only(client):
-    owner = _guest(client)
-    outsider = _guest(client)
-    invited = _guest(client)
+    owner = _signup(client, "owner")
+    outsider = _signup(client, "outsider")
+    invited = _signup(client, "invited")
     club = _create_club(client, owner, "private")
     invite_code = club["inviteCode"]
     assert invite_code
@@ -144,8 +139,8 @@ def test_private_club_is_listed_but_invite_code_stays_admin_only(client):
 
 
 def test_private_club_join_without_code_requires_approval(client):
-    owner = _guest(client)
-    outsider = _guest(client)
+    owner = _signup(client, "owner")
+    outsider = _signup(client, "outsider")
     club = _create_club(client, owner, "private")
 
     response = client.post(f"/api/clubs/{club['id']}/join", json={}, headers=outsider["headers"])
@@ -156,8 +151,8 @@ def test_private_club_join_without_code_requires_approval(client):
 
 
 def test_private_club_join_request_can_be_approved(client):
-    owner = _guest(client)
-    requester = _guest(client)
+    owner = _signup(client, "owner")
+    requester = _signup(client, "requester")
     club = _create_club(client, owner, "private")
 
     pending = client.post(f"/api/clubs/{club['id']}/join", json={}, headers=requester["headers"])
@@ -185,8 +180,8 @@ def test_private_club_join_request_can_be_approved(client):
 
 
 def test_boards_and_messages_are_members_only(client):
-    owner = _guest(client)
-    outsider = _guest(client)
+    owner = _signup(client, "owner")
+    outsider = _signup(client, "outsider")
     club = _create_club(client, owner, "private")
     board = _create_board(client, owner, club["id"])
 
@@ -209,8 +204,8 @@ def test_boards_and_messages_are_members_only(client):
 
 
 def test_event_rsvp_yes_no_maybe(client):
-    owner = _guest(client)
-    member = _guest(client)
+    owner = _signup(client, "owner")
+    member = _signup(client, "member")
     club = _create_club(client, owner, "public")
     client.post(f"/api/clubs/{club['id']}/join", json={}, headers=member["headers"])
 
@@ -248,9 +243,9 @@ def test_websocket_rejects_bad_token(client):
 
 
 def test_websocket_subscribe_and_message_broadcast_for_members(client):
-    owner = _guest(client)
-    member = _guest(client)
-    outsider = _guest(client)
+    owner = _signup(client, "owner")
+    member = _signup(client, "member")
+    outsider = _signup(client, "outsider")
     club = _create_club(client, owner, "public")
     client.post(f"/api/clubs/{club['id']}/join", json={}, headers=member["headers"])
     board = _create_board(client, owner, club["id"])
@@ -288,8 +283,8 @@ def test_websocket_subscribe_and_message_broadcast_for_members(client):
 
 
 def test_removed_member_stops_receiving_board_traffic(client):
-    owner = _guest(client)
-    member = _guest(client)
+    owner = _signup(client, "owner")
+    member = _signup(client, "member")
     club = _create_club(client, owner, "public")
     client.post(f"/api/clubs/{club['id']}/join", json={}, headers=member["headers"])
     board = _create_board(client, owner, club["id"])
@@ -321,3 +316,27 @@ def test_removed_member_stops_receiving_board_traffic(client):
         member_ws.send_json({"type": "subscribe", "boardId": board["id"]})
         frame = member_ws.receive_json()
         assert frame["type"] == "error", "removed member must not receive the broadcast"
+
+
+def test_account_delete_requires_username_and_password(client):
+    actor = _signup(client, "leaver")
+    username = actor["user"]["username"]
+
+    mismatch = client.request(
+        "DELETE", "/api/profile", json={"confirm": "someone-else", "password": "correct-horse"},
+        headers=actor["headers"],
+    )
+    assert mismatch.status_code == 400
+
+    wrong_password = client.request(
+        "DELETE", "/api/profile", json={"confirm": username, "password": "not-the-password"},
+        headers=actor["headers"],
+    )
+    assert wrong_password.status_code == 403
+
+    deleted = client.request(
+        "DELETE", "/api/profile", json={"confirm": username, "password": "correct-horse"},
+        headers=actor["headers"],
+    )
+    assert deleted.status_code == 204
+    assert client.post("/api/auth/login", json={"username": username, "password": "correct-horse"}).status_code == 401

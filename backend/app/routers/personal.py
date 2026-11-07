@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..database import get_db
 from ..media import delete_upload, save_image
-from ..models import JournalEntry
-from ..schemas import JournalIn, ProfileUpdate
-from ..security import CurrentUser
+from ..models import Book, Club, JournalEntry
+from ..schemas import AccountDeleteIn, JournalIn, ProfileUpdate
+from ..security import CurrentUser, verify_password
 from ..serializers import journal_out, user_out
 
 router = APIRouter(tags=["personal"])
@@ -78,3 +78,19 @@ def remove_avatar(user: CurrentUser, db: Session = Depends(get_db)) -> dict:
     user.avatar_url = None
     db.commit()
     return user_out(user)
+
+
+@router.delete("/profile", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(body: AccountDeleteIn, user: CurrentUser, db: Session = Depends(get_db)) -> None:
+    if body.confirm.strip().lower() != user.username:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Confirmation does not match your username")
+    # 403 rather than 401: the web client treats 401 as an expired session and logs the user out.
+    if not verify_password(body.password, user.password_hash):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Password is incorrect")
+    if db.scalar(select(Club.id).where(Club.owner_id == user.id).limit(1)) is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Transfer or delete the clubs you own before deleting your account")
+    for book_cover in db.scalars(select(Book.cover_image_url).where(Book.owner_id == user.id)):
+        delete_upload(book_cover)
+    delete_upload(user.avatar_url)
+    db.delete(user)
+    db.commit()

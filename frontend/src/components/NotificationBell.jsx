@@ -79,7 +79,7 @@ export default function NotificationBell() {
           ) : (
             <ul className="max-h-96 space-y-2 overflow-y-auto">
               {items.map((item) => (
-                <li key={item.id} className={`rounded-sm border p-3 text-sm ${item.read ? 'border-gold/40 text-sepia/70' : 'border-gold bg-surface/60'}`}>
+                <li key={item.id} className={`rounded-sm border p-3 text-sm ${item.read ? 'border-gold/40 text-sepia/70' : 'border-gold bg-white/60'}`}>
                   <p>{item.message}</p>
                   <p className="mt-1 text-xs text-sepia/60">{formatWhen(item.createdAt)}</p>
                 </li>
