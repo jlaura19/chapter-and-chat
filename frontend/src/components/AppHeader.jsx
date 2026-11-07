@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Link, useNavigate } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import api from '../services/api'
-import { clearToken, getCurrentUsername } from '../services/session'
+import { getCurrentUsername, clearToken } from '../services/session'
 import { Avatar } from './ui'
 import NotificationBell from './NotificationBell'
 
 export default function AppHeader({ title, subtitle, primaryAction }) {
-  const navigate = useNavigate()
   const [me, setMe] = useState(null)
 
   useEffect(() => {
@@ -15,21 +14,20 @@ export default function AppHeader({ title, subtitle, primaryAction }) {
       .catch(() => {})
   }, [])
 
-  const handleLogout = () => {
-    clearToken()
-    window.dispatchEvent(new Event('bookclub:logout'))
-    navigate('/', { replace: true })
-  }
-
   const navClass = ({ isActive }) =>
     `border-b-2 pb-0.5 font-display transition ${isActive ? 'border-burgundy text-burgundy' : 'border-transparent text-sepia/70 hover:text-sepia'}`
 
   return (
     <header className="border-b border-gold bg-parchment px-6 py-5 font-body text-sepia">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl">{title}</h1>
-          <p className="italic text-sepia/70">{subtitle}</p>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+          <Link to="/dashboard" className="flex items-center" aria-label="Chapter & Chat home">
+            <img src="/chapter-and-chat-logo.png" alt="" className="brand-mark h-14 w-[4.5rem] object-contain" />
+          </Link>
+          <div>
+            <h1 className="font-display text-3xl">{title}</h1>
+            <p className="text-sm text-sepia/70">{subtitle}</p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -43,9 +41,16 @@ export default function AppHeader({ title, subtitle, primaryAction }) {
             <Avatar user={me ?? { username: getCurrentUsername() }} size="sm" />
             <span>{me?.displayName || getCurrentUsername() || 'Reader'}</span>
           </Link>
-          <button type="button" onClick={handleLogout} className="rounded-sm border border-gold px-4 py-2 font-display hover:border-burgundy hover:text-burgundy">
-            Logout
-          </button>
+          {me && <button
+            type="button"
+            onClick={() => {
+              clearToken()
+              window.dispatchEvent(new Event('chapter-chat:session-expired'))
+            }}
+            className="rounded-full border border-gold/70 px-3 py-1 text-xs text-sepia/70 hover:border-burgundy hover:text-burgundy"
+          >
+            {me.email ? 'Sign out' : 'Create Account'}
+          </button>}
         </div>
       </div>
 

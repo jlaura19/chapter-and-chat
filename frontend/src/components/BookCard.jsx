@@ -22,7 +22,7 @@ export default function BookCard({ book, canManage = false, onDelete }) {
   }
 
   return (
-    <article className="flex flex-col gap-3 rounded-md border border-gold/70 bg-white/70 p-3 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="flex flex-col gap-3 rounded-md border border-gold/70 bg-surface/70 p-3 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
       <div className="relative aspect-[2/3] overflow-hidden rounded-sm border border-gold/60 bg-gradient-to-br from-sepia/80 to-sepia">
         {book.coverImageUrl ? (
           <img src={resolveMediaUrl(book.coverImageUrl)} alt={`${book.title} cover`} className="h-full w-full object-cover" />

@@ -1,6 +1,8 @@
 # Book Club API (FastAPI)
 
-FastAPI backend for the Book Club app. It replaces the earlier Spring Boot service. The frontend in `../frontend` talks to it through the `/api` and `/ws` paths.
+FastAPI backend for Chapter & Chat. The frontend in `../frontend` talks to it through the `/api` and `/ws` paths.
+
+The app creates a guest profile automatically for each browser. Its random guest ID is stored in that browser's local storage; clearing site data disconnects the browser from its guest-owned books, journal, and club memberships. Guest profiles do not use passwords or account sign-up/login endpoints.
 
 ## Setup
 
@@ -50,7 +52,6 @@ Tests use a temporary SQLite database. They set their own `DATABASE_URL`, `UPLOA
 | `DATABASE_URL` | SQLAlchemy URL (SQLite for dev, PostgreSQL for production) |
 | `JWT_SECRET` | Signing key for access tokens. Required in production |
 | `CORS_ORIGINS` | JSON list of allowed origins |
-| `ADMIN_USERNAMES` | JSON list of usernames that get the admin role on signup |
 | `UPLOAD_DIR` | Where book covers and avatars are stored |
 
 ## Conventions
@@ -58,5 +59,4 @@ Tests use a temporary SQLite database. They set their own `DATABASE_URL`, `UPLOA
 - JSON keys are camelCase. Models use snake_case internally, and `CamelModel` converts them.
 - Privacy values are lowercase: `public` or `private`.
 - Private clubs are listed by name for everyone. Their details, invite codes, and member-only data stay hidden from non-members: the invite code is returned only to owners and admins, joining without an invite code creates a pending request for admins to approve, and boards, messages, and events require membership.
-- Account deletion (`DELETE /api/profile`) takes a JSON body with `confirm` (your username) and `password`. A wrong password returns 403, not 401, because 401 means an expired session to the web client.
 - Errors use FastAPI's `detail` field.
