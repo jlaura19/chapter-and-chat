@@ -1,9 +1,9 @@
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
-USERNAME_PATTERN = r"^[A-Za-z0-9_]{3,32}$"
 READING_STATUSES = ("To Read", "Reading", "Completed")
 RSVP_RESPONSES = ("yes", "no", "maybe")
 
@@ -12,17 +12,6 @@ class CamelModel(BaseModel):
     """Accepts and emits camelCase JSON, matching the frontend contract."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-
-class SignupIn(CamelModel):
-    username: str = Field(pattern=USERNAME_PATTERN)
-    password: str = Field(min_length=8, max_length=128)
-    display_name: str = Field("", max_length=64)
-
-
-class LoginIn(CamelModel):
-    username: str = Field(min_length=1, max_length=32)
-    password: str = Field(min_length=1, max_length=128)
 
 
 class ProfileUpdate(CamelModel):
@@ -37,9 +26,19 @@ class ProfileUpdate(CamelModel):
     show_avatars: bool | None = None
 
 
-class AccountDeleteIn(CamelModel):
-    confirm: str = Field(..., min_length=1, max_length=64)
-    password: str = Field(..., min_length=1, max_length=128)
+class GuestIn(CamelModel):
+    guest_id: UUID
+
+
+class RegisterIn(CamelModel):
+    email: str = Field(max_length=255, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    password: str = Field(min_length=8, max_length=128)
+    display_name: str = Field("", max_length=64)
+
+
+class LoginIn(CamelModel):
+    email: str = Field(max_length=255)
+    password: str = Field(max_length=128)
 
 
 class ReviewIn(CamelModel):

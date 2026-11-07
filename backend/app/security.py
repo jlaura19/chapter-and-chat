@@ -1,5 +1,3 @@
-import hashlib
-import hmac
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
@@ -19,30 +17,12 @@ logger = logging.getLogger(__name__)
 
 CLUB_ADMIN_ROLES = ("owner", "admin")
 
-_SCRYPT_PARAMS = {"n": 2**14, "r": 8, "p": 1, "dklen": 64}
 _settings = get_settings()
 if not _settings.jwt_secret:
     logger.warning("JWT_SECRET is not set; using a random per-process secret. Sessions reset on restart.")
 _JWT_SECRET = _settings.jwt_secret or secrets.token_urlsafe(48)
 
 _bearer = HTTPBearer(auto_error=False)
-
-
-def hash_password(password: str) -> str:
-    salt = secrets.token_bytes(16)
-    digest = hashlib.scrypt(password.encode(), salt=salt, **_SCRYPT_PARAMS)
-    return f"scrypt${salt.hex()}${digest.hex()}"
-
-
-def verify_password(password: str, stored: str) -> bool:
-    try:
-        scheme, salt_hex, digest_hex = stored.split("$")
-    except ValueError:
-        return False
-    if scheme != "scrypt":
-        return False
-    digest = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt_hex), **_SCRYPT_PARAMS)
-    return hmac.compare_digest(digest.hex(), digest_hex)
 
 
 def create_access_token(user: User) -> str:
@@ -85,15 +65,6 @@ def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
-
-
-def require_admin(user: CurrentUser) -> User:
-    if user.role != "admin":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Administrator role required")
-    return user
-
-
-AdminUser = Annotated[User, Depends(require_admin)]
 
 
 def get_membership(db: Session, club_id: int, user_id: int) -> ClubMembership | None:
